@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch: {} # manual trigger from Actions tab
 
 jobs:
   build:
@@ -13,41 +14,26 @@ jobs:
         with:
           lfs: true
 
-      # Cache between runs (optional)
-      - name: Cache Unity build
+      - name: Cache Library
         uses: actions/cache@v4
         with:
-          path: |
-            Library
+          path: Library
           key: ${{ runner.os }}-unity-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-unity-
 
-      # Setup Unity (game-ci/unity-builder)
-      - name: Setup Unity
+      - name: Build for WebGL (game-ci/unity-builder)
         uses: game-ci/unity-builder@v2
         with:
-          unityVersion: 2022.3.0f1  # set specific patch to match installed editor
-
-      # Build project for WebGL
-      - name: Build for WebGL
-        uses: game-ci/unity-builder@v2
-        with:
-          targetPlatform: WebGL
-          buildName: WebGLBuild
           projectPath: .
-          buildPath: build/WebGL
+          targetPlatform: WebGL
+          unityVersion: 2022.3.0f1 # यदि आप अलग Unity version use कर रहे हैं तो यहीं बदलें
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
 
-      # Deploy to gh-pages
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build/WebGL
           publish_branch: gh-pages
-
-# Notes:
-# - This workflow may require Unity activation if using a paid license.
-# - Alternatives:
-#   * Build WebGL locally and push the build to gh-pages branch manually
-#   * Use cached local build workflow (dev-friendly)
